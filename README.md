@@ -104,7 +104,7 @@ Installation
 	cd /etc
 	./create-delegate-public.conf.sh
 	./create-delegate-private.conf.sh
-	``
+	```
 	At this point, the two `redis` server instances should be running and should start on reboot as well.
 
 	

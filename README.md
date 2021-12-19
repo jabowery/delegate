@@ -21,7 +21,7 @@ Another feature is "delegate money":  a demurrage currency system to incentivise
 2. The money supply is based on an estimate of the property value required to support all governmental personnel.
 3. The initial money supply is "minted" so as to make the delegate network go viral:  incentivise early participation thereby creating a critical mass of participants to reach network effect tipping point.
 
-Installation
+## Installation
 
 1. Obtain a [Telnyx] [phone number](https://portal.telnyx.com/#/app/numbers/my-numbers) with a [call control app id](https://portal.telnyx.com/#/app/call-control/applications).
 2. In this directory create a file named .env for environment variables, with a development environment exemplified in README.resources/home/delegate/.env

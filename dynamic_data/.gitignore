@@ -1,0 +1,6 @@
+*
+!.gitignore
+!namescrambler*.py
+!properties
+!iowa_voters_scrambled.csv.bz2
+!voters_df.csv

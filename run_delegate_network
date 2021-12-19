@@ -1,0 +1,41 @@
+#!/bin/bash
+###
+##
+# Copyright (C) 2021 James A. Bowery
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see: <http://www.gnu.org/licenses/>.
+##
+###
+export TERM=ascii
+# Run an ngrok flask app version of the delegate network.
+pyflakes *.py
+# The file nowdebugging is a kludge to permit pdb interaction with 
+# the otherwise multithreaded server.
+rm nowdebugging 2>/dev/null
+#./ngrok http -config=ng.config 5000 &
+ngrok http  5000 &
+while : ; do
+	URL=`python ngrokurl.py`
+	$URL || break
+	sleep 10
+done
+while true; do
+	./forwardngrokcontrolappurl "${URL}Callbacks/Voice/Inbound"
+#	FLASK_APP=delegate.py FLASK_ENV=development flask run
+	FLASK_APP=delegate.py flask run 
+	sleep 3
+	kill $!
+	sleep 5
+done
+echo 'DONE'

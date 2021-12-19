@@ -1,0 +1,38 @@
+name: 'delegate'
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - pandas
+  - ipython
+  - mamba
+  - telnyx
+  - ca-certificates
+  - certifi
+  - openssl
+  - flask
+  - python-dotenv
+  - h5py
+  - python-levenshtein
+  - pytables
+  - pyflakes
+  - psutil
+  - redis-py
+  - apscheduler
+  - flask-apscheduler
+  - pipreqs
+  - bs4
+  - lxml
+  - nltk
+  - numpy
+  - redis
+  - multiprocess
+  - pip
+  - pip:
+    - ipython-reload
+    - panphon==0.19
+    - redis-shelve==1.0.3
+    - phonemizer==2.2.2
+    - py-espeak-ng==0.1.8
+prefix: /home/jabowery/anaconda3/envs/delegate

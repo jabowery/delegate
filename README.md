@@ -38,11 +38,7 @@ Another feature is "delegate money":  a [demurrage currency](https://en.wikipedi
 	```
 	STATE_OR_PROVINCE = 'iowa'
 	```
-	For authentication of call-ins by sovereigns (unrestricted ability to mint Delegate money), specify their caller IDs:
-	```
-	SOVEREIGN_PHONES = ['712-123-9876','712-125-7890']
-	```
-	
+		
 	Provide a path for the publicly accessible audit log.  In this example a symbolic link has been created to a website directory:
 	```
 	AUDIT_LOG=public_html/audit_log.txt
@@ -177,7 +173,7 @@ Another feature is "delegate money":  a [demurrage currency](https://en.wikipedi
 1. SIP level processing of speech packets for real-time custom transcription.
 	1. Improve accuracy (telnyx transcripts must be converted back to phonemes for the delegate network's approximate proper name matching).
 	1. Decreased costs (telnyx charges $0.05/minute of connect time to the delegate network systems).
-1. Flesh out the "Property Money" implementation.
+1. Flesh out the "Property Money" implementation (as distinct from "Delegate Money").
 	1. Allow people to opt-in to receive text notifications when they receive property money.
 	1. Get the phone numbers (caller IDs) of all sovereigns in the Congressional district.
 	1. Locate those sovereigns in the voters registrations and update the associated tentative data in redis to contain those phone numbers.

@@ -101,14 +101,14 @@ Another feature is "delegate money":  a demurrage currency system to incentivise
 	```
 	Generate the redis configuration files (which also enables and starts their corresponding server instances):
 	```
-	cd /etc
-	./create-delegate-public.conf.sh
+	cd /etc/redis
+	./create-delegate-transactions.conf.sh
 	./create-delegate-private.conf.sh
 	```
 	At this point, the two `redis` server instances should be running and should start on reboot as well.
 
 	
-	Here is a suggested modification for the default redis configuration under Linux:
+	For those not using these configuration generation scripts, here is the suggested modification for the default redis configuration under Linux, reflected in the above configuration generation shell scripts:
 	```
 	# Please check http://redis.io/topics/persistence for more information.
 

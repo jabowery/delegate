@@ -2,9 +2,9 @@
 
 ## Overview
 
-The delegate network is completely transparent, easy-to-use and understand version of what is sometimes called [liquid democracy](https://en.wikipedia.org/wiki/Liquid_democracy).
+The delegate network is a completely transparent, easy-to-use and understand version of what is sometimes called [liquid democracy](https://en.wikipedia.org/wiki/Liquid_democracy).
 
-Imagine a phone number answered by an instance of the Delegate Network.  You, as a registered voter, call that number.  Say "John Doe of Centerville" and hang up.  Later, the registered voter, John Doe of Centerville calls the Delegate Network and votes on bills before the US House of Representatives, but his count as _TWO_ votes:  His and yours.  He's your "delegate".  More people delegate to him.  His power grows.  But John Doe of Centerville is only human.  You call the Delegate Network and say "audit".  The Delegate Network reports how your voting power has been used on a bill you deeply care about.  Power corrupted him.  You say "recall".  Instantly, he weilds one less vote against people like you.  You know others that trust him.  You call to warn them.  Even after discussions, some disagree with your opinion.  Others agree.  He loses more power.  Since the Delegate Network is publicly auditable at all times, news of his betrayal spreads to most everyone that trusted him.  All have an incentive to communicate in more depth than a Facebook post or Tweet.  Power hierarchies evolve toward greater trust. 
+Imagine a phone number answered by an instance of the Delegate Network.  You, as a registered voter, call that number.  Say "John Doe of Centerville" and hang up.  Later, the registered voter, John Doe of Centerville calls the Delegate Network and votes on bills before the US House of Representatives, but his count as _TWO_ votes:  His and yours.  He's your "delegate".  More people delegate to him.  His power grows.  But John Doe of Centerville is only human.  You call the Delegate Network and say "audit".  The Delegate Network reports how your voting power has been used on a bill you deeply care about.  Power corrupted him.  You say "recall".  Instantly, he wields one less vote against people like you.  You know others that trust him.  You call to warn them.  Even after discussions, some disagree with your opinion.  Others agree.  He loses more power.  Since the Delegate Network is publicly auditable at all times, news of his betrayal spreads to most everyone that trusted him.  All have an incentive to communicate in more depth than a Facebook post or Tweet.  Power hierarchies evolve toward greater trust. 
 
 Now, imagine a candidate campaigns for a seat in the US House of Representatives with one promise:
 
@@ -12,18 +12,18 @@ Now, imagine a candidate campaigns for a seat in the US House of Representatives
 
 Voter authentication is based on:
 
-1. FCC-mandated SHAKEN/STIR authentication of caller IDs that has been in effect since June of 2021.
+1. [FCC-mandated SHAKEN/STIR](https://www.fcc.gov/call-authentication) authentication of caller IDs that has been in effect since June of 2021.
 2. Phone numbers appearing in the Secretary of State voter registration records.
 
-Another feature is "delegate money":  a demurrage currency system to incentivise participation.  Philosophically speaking, politics and money are the two primary abstractions of government's monopoly on force.  Reforming politics alone is impractical.  To quote the founder of the Rothschild banking dynasty:  "Give me control of a nation’s money supply, and I care not who makes its laws." While there have been, will continue to be, ideas held as passionately as they are divergent about how to wrangle the abstraction of force called "fiat money", the delegate money system is a pragmatic degeneration -- targeting political command and control hierarchies -- of what the author has called "property money".  In the general form of "property money", fiat money is backed by the value of enforced property rights in what might be called "civilization as a service" -- a service provided by those who place their flesh, blood and bone between chaos and civilization.  In the interrum, delegate money pragmatically degenerates property money as follows: 
+Another feature is "delegate money":  a [demurrage currency](https://en.wikipedia.org/wiki/Demurrage_(currency)) system to incentivise participation.  Philosophically speaking, politics and money are the two primary abstractions of government's monopoly on force.  Reforming politics alone is impractical.  To quote the founder of the Rothschild banking dynasty:  "Give me control of a nation’s money supply, and I care not who makes its laws." While there have been, will continue to be, ideas held as passionately as they are divergent about how to wrangle the abstraction of force called "fiat money", the delegate money system is a pragmatic degeneration -- targeting political command and control hierarchies -- of what the author has called "[property money](https://jimbowery.blogspot.com/2020/01/property-money.html)".  In the general form of "property money", fiat money is backed by the value of enforced property rights in what might be called "civilization as a service" -- a service provided by "[those who place their flesh, blood and bone between chaos and civilization](https://youtu.be/pobG397KwDw)".  They are called "Soverigns" in the terminology of "property money".  In the interim, delegate money pragmatically degenerates property money as follows: 
 
 1. Treat those who verify their phone numbers in their voter registrations with their Secretary of State, and who then use those phone numbers to participate in the delegate network, as though they were placing their flesh, blood and bone between chaos and civilization.  They are the recipients of demurrage fees, equally apportioned among them.
 2. The money supply is based on an estimate of the property value required to support all governmental personnel.
-3. The initial money supply is "minted" so as to make the delegate network go viral:  incentivise early participation thereby creating a critical mass of participants to reach network effect tipping point.
+3. The initial money supply is "minted" so as to make the delegate network go viral:  incentivise early participation thereby creating a critical mass of participants to reach [network effect](https://en.wikipedia.org/wiki/Network_effect) tipping point.
 
-Installation
+## Installation
 
-1. Obtain a [Telnyx] [phone number](https://portal.telnyx.com/#/app/numbers/my-numbers) with a [call control app id](https://portal.telnyx.com/#/app/call-control/applications).
+1. Obtain a [Telnyx phone number](https://portal.telnyx.com/#/app/numbers/my-numbers) with a [call control app id](https://portal.telnyx.com/#/app/call-control/applications).
 2. In this directory create a file named .env for environment variables, with a development environment exemplified in README.resources/home/delegate/.env
 
 	```
@@ -38,11 +38,7 @@ Installation
 	```
 	STATE_OR_PROVINCE = 'iowa'
 	```
-	For authentication of call-ins by sovereigns (unrestricted ability to mint Delegate money), specify their caller IDs:
-	```
-	SOVEREIGN_PHONES = ['712-123-9876','712-125-7890']
-	```
-	
+		
 	Provide a path for the publicly accessible audit log.  In this example a symbolic link has been created to a website directory:
 	```
 	AUDIT_LOG=public_html/audit_log.txt
@@ -75,14 +71,14 @@ Installation
 	README.resources/lib/systemd/system/redis-server@.service	# systemd template (unmodified location and contents from the Ubuntu 20.04 distribution) 
 	README.resources/etc/systemd/system/redis-server@.service.d/override.conf # installation override of the systemd template
 	README.resources/etc/redis/create-delegate-public.conf.sh	# script to generate the public-facing redis server's configuration
-	README.resources/etc/redis/bak/redis.conf			# source configuraiton for configuration generation edited from original /etc/redis/redis.conf according to the "sugested modification for" below
+	README.resources/etc/redis/bak/redis.conf			# source configuration for configuration generation edited from original /etc/redis/redis.conf according to the "suggested modification for" below
 	README.resources/etc/redis/create-delegate-private.conf.sh	# script to generate the private redis server's configuration
 	README.resources/etc/redis/redis-delegate-private.conf.patch	# patch required by create-delegate-private.conf.sh
 	README.resources/etc/redis/redis-delegate-public.conf.patch	# patch required by create-delegate-public.conf.sh
 	```
 	The following instructions work under a clean install of Ubuntu 20.04LTS, but may damage other systems:
 	
-	Disable the exising `redis` server instance:
+	Disable the existing `redis` server instance:
 	```
 	systemctl stop redis-server
 	systemctl disable redis-server
@@ -101,14 +97,14 @@ Installation
 	```
 	Generate the redis configuration files (which also enables and starts their corresponding server instances):
 	```
-	cd /etc
-	./create-delegate-public.conf.sh
+	cd /etc/redis
+	./create-delegate-transactions.conf.sh
 	./create-delegate-private.conf.sh
-	``
+	```
 	At this point, the two `redis` server instances should be running and should start on reboot as well.
 
 	
-	Here is a suggested modification for the default redis configuration under Linux:
+	For those not using these configuration generation scripts, here is the suggested modification for the default redis configuration under Linux, reflected in the above configuration generation shell scripts:
 	```
 	# Please check http://redis.io/topics/persistence for more information.
 
@@ -165,25 +161,25 @@ Installation
 		1. Lower priority: Queries to identify top influencers on specific bills.
 1. Call-back authentication in lieu of SHAKEN/STIR APIs.
 1. Re-factor to abstract jurisdiction-specific parameters and put them in the .env configuration.
-	1. This may involve a creating a modularized extension API inheriting from an Abstract Base Class.
+	1. This may involve creating a modularized extension API inheriting from an Abstract Base Class.
 1. Regression testing framework.
 	1. A set of MP3s to stimulate the transcription service, with expected results based on the anonymized voters sample data provided with the repository.
 1. Document lobotomized redis with invocation: runuser -g redis -u redis redis-server redis-delegate-public.conf
 1. Authentication using SHAKEN/STIR attestation.
 	1. This may entail getting off the Telynx platform, which would raise the priority of abstracting out the telecom service provider API.
 1. Better-abstraction of the telecom service provider API.
-	1. Again, a modularized extensioin API inheriting from ABC is probably necesary.
+	1. Again, a modularized extension API inheriting from ABC is probably necessary.
 1. Replace all those print statements with a logger and read any non-default level from .env.
 1. SIP level processing of speech packets for real-time custom transcription.
 	1. Improve accuracy (telnyx transcripts must be converted back to phonemes for the delegate network's approximate proper name matching).
 	1. Decreased costs (telnyx charges $0.05/minute of connect time to the delegate network systems).
-1. Flesh out the "Propery Money" implementation.
+1. Flesh out the "Property Money" implementation (as distinct from "Delegate Money").
 	1. Allow people to opt-in to receive text notifications when they receive property money.
 	1. Get the phone numbers (caller IDs) of all sovereigns in the Congressional district.
 	1. Locate those sovereigns in the voters registrations and update the associated tentative data in redis to contain those phone numbers.
-	1. In the interrum (before incorporation of property taxes), a web interface suffices for property owners to register their properties in delegate money.
+	1. In the interim (before incorporation of property taxes), a web interface suffices for property owners to register their properties in delegate money.
 		1. Prioritize counties where sovereigns have an existing program to give toys to impoverished children.
-		1. Contact businesses that have excess inventory they are willing to sell for play money heading toward Chritmas.
+		1. Contact businesses that have excess inventory they are willing to sell for play money heading toward Christmas.
 		1. Ensure their phone numbers are registered as are the phone numbers of the sovereigns.
 		1. Provide businesses and sovereigns with The Delegate Networks phone number and instructions.
 		1. Provide a web interface at delegate.network for businesses and property owners to register the amount of Delegate Money they're willing to accept and for what in exchange.

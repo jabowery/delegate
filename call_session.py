@@ -1290,6 +1290,9 @@ class Call_Session:
         # presume first [middle] last is all there is left in the trs reduction of transcript to process
         trs=Call_Session.delete_headntail_sp(trs)
         fls = trs.split(' ')
+        if fls[-1]=='iowa':  # "iowa" is a redundant ending that people reflexively use for locations
+            # TODO make this use the configurable environment variable 
+            fls.pop()   # drop the trailing 'iowa' that may have been left over from the residence specification (probably zip)
         if resides == {} and len(fls)>2: # if no "resides" restriction as yet and 3 or more names, suspect all but the first two are city or county
             for wordnum in range(2,len(fls)):
                 resname = ' '.join(fls[wordnum:])
@@ -1308,8 +1311,6 @@ class Call_Session:
         logging.debug('fls: '+str( fls))
         logging.debug('df_narrowed')
         logging.debug(df_narrowed)
-        if fls[-1]=='iowa': 
-            fls.pop()   # drop the trailing 'iowa' that may have been left over from the residence specification (probably zip)
         ###
         ## Initialize return variables to assume failure.
         #
@@ -1319,6 +1320,7 @@ class Call_Session:
         #
         ## Initialized return variables to assume failure.
         ###
+        logging.debug('START preparing homonym queries')
         if len(fls)==1:
             self.say("I thought I heard only one name")
             self.say(f"It sounded like the word {fls[0]}.")
@@ -1378,10 +1380,10 @@ class Call_Session:
                 whom_query|={'MIDDLE_NAME':fn, 'LAST_NAME':last}
                 logging.debug(whom_query)
                 whom_queries.append(pd.Series(whom_query))
-
+        logging.debug('DONE preparing homonym queries')
         self.whom_queries = whom_queries
         other_id=None
-        logging.debug('searching for exact match')
+        logging.debug('START searching for exact match')
         self.which_whom_query = None
         self.first_whom_query = None
         for whom_query in whom_queries: # exit at the first query result that provides a match
@@ -1392,6 +1394,7 @@ class Call_Session:
                 self.which_whom_query = whom_query # this is the variant found
                 self.first_whom_query=whom_queries[0] # this is what they expected to find, but it may be some variant
                 break
+        logging.debug('DONE searching for exact match')
         if other_id == None:
             """
             ###
@@ -1451,6 +1454,8 @@ class Call_Session:
 #                    self.say(f"As I detected no location information in your description of {self.transcript}")
                     self.say("I did not understand a location from what I heard, which was:")
                     self.say(self.transcript)
+                    self.whom = None
+                    return self.whom
                 self.say(f"I'm looking through {len(df_narrowed)} registered voters for {self.transcript}.")
                 self.say("Just a moment...")
                 self.speak()

@@ -31,15 +31,12 @@ from multiprocess import Pool
 #import subprocess
 #from shelves import sessions_shelve
 from shelves import voters_shelve
+from global_utils import vu_filepath, v_filepath, first_tentative_vid
 #from shelves import properties_shelve
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-
-
 VOTING_DISTRICT = os.getenv("VOTING_DISTRICT")
-STATE_OR_PROVINCE = os.getenv("STATE_OR_PROVINCE")
-first_tentative_vid = int(1e10) # well beyond anything the Iowa SoS has allocated in its records
 
 #third_congressional_district_counties = ['guthrie','dallas','polk','warren','madison','adair','cass','pottawattamie','mills','montgomery','adams','union','fremont','page','taylor','ringgold']
 #third_congressional_district_county_REP_chairs =['therese davis','ronald forsell','gloria mazza','mark snell']
@@ -157,11 +154,6 @@ def ciph(df):
 def coph(df):
     return my_phonemize_cached(df,'county')
 
-dd_path = 'dynamic_data'
-vu_path = 'voter_downloads'
-vu_filename = 'all.csv'
-vu_filepath = vu_path+'/'+vu_filename
-v_filepath = dd_path+'/'+f'{STATE_OR_PROVINCE}'+('_district{VOTING_DISTRICT}' if VOTING_DISTRICT else '')+'_voters.csv'
 v_exists = os.path.exists(v_filepath)
 vu_exists = os.path.exists(vu_filepath ) 
 if     (v_exists and vu_exists and os.path.getmtime(vu_filepath) > os.path.getmtime(v_filepath)

@@ -21,6 +21,19 @@ import pandas as pd
 import re
 import json
 import base64
+import os
+from dotenv import load_dotenv
+load_dotenv(override=True)
+VOTING_DISTRICT = os.getenv("VOTING_DISTRICT")
+STATE_OR_PROVINCE = os.getenv("STATE_OR_PROVINCE")
+
+dd_path = 'dynamic_data'
+vu_path = 'voter_downloads'
+vu_path = 'voter_downloads'
+vu_filename = 'all.csv'
+vu_filepath = vu_path+'/'+vu_filename
+v_filepath = dd_path+'/'+f'{STATE_OR_PROVINCE}'+('_district{VOTING_DISTRICT}' if VOTING_DISTRICT else '')+'_voters.csv'
+first_tentative_vid = int(1e10) # well beyond anything the Iowa SoS has allocated in its records
 
 def bp(): 
     # breakpoint within server creating file blocking additional thread spawns

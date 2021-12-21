@@ -16,13 +16,21 @@
 # along with this program; if not, see: <http://www.gnu.org/licenses/>.
 ##
 ###
+from global_utils import dd_path
 import logging
 from shelves import transactions_shelve as shelve
 from properties import Property
 import time
+from pathlib import Path
 import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
+audit_log_filepath = os.getenv('AUDIT_LOG') or 'dd_path/audit_log.txt'
+audit_log_filepath = Path(audit_log_filepath)
+if not(audit_log_filepath.exists()):
+    audit_log_filepath.parent.mkdir(parents=True,exist_ok=True)
+    audit_log_filepath.touch()
+
 def prepend(subject, predicate, amount, object_of):
     line = ' '.join(
         [
@@ -35,7 +43,7 @@ def prepend(subject, predicate, amount, object_of):
         "\n"
         ]
     )
-    with open(os.getenv('AUDIT_LOG'), 'r+') as audit_log_file:
+    with open(audit_log_filepath, 'r+') as audit_log_file:
         content = audit_log_file.read()
         audit_log_file.seek(0)
         audit_log_file.write(line + content)

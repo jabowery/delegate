@@ -534,10 +534,10 @@ class Call_Session:
         #
         # initialized -> answered/welcomed -> voting_action?
     def call_answered(self):
-        if not(self.data.payload.from_.area in {'712', '515','641', '402','319','563'}): # TODO configuration 
-            logging.debug('hanging up on area code '+str(self.data.payload.from_.area))
-            self.hangup()
-            return 
+#        if not(self.data.payload.from_.area in {'712', '515','641', '402','319','563'}): # TODO configuration 
+#            logging.debug('hanging up on area code '+str(self.data.payload.from_.area))
+#            self.hangup()
+#            return 
         self.payload = self.data.payload
         transcription_url = f'https://api.telnyx.com/v2/calls/{self.call_control_id}/actions/transcription_start'
         headers2 = {'Content-Type':'application/json','Accept': 'application/json;charset=utf-8','Authorization': f'Bearer {telnyx.api_key}',}

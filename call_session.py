@@ -1396,29 +1396,6 @@ class Call_Session:
                 break
         logging.debug('DONE searching for exact match')
         if other_id == None:
-            """
-            ###
-            ## Find the voter matching the most informative interpretation of the queries.
-            #
-            for query_num in range(0,len(whom_queries)):
-                ser = whom_queries[query_num]
-                # Bias matches according to how rare (informative) the values matched are.
-                col_info = [1-(1/col_val_count[col_name][col_val] if col_val in col_val_count[col_name] else 0) for col_name,col_val in ser.items()]
-                infobools = voters_df_reset_index[ser.index.tolist()].eq(ser)  # boolean match table
-                infoscores = 1-((infobools.multiply(col_info)+(~infobools)).product(axis=1)) # higher row products are closer to rare matches
-                this_max = infoscores.max() # get the maximum for this query
-                if this_max>prior_max:
-                    prior_max = this_max # track the maximum across queries
-                    prior_idx = infoscores.idxmax()
-                    prior_max_query = query_num
-                logging.debug(this_max+str(ser))
-            if prior_max>0.2: # if the maximum match across queries is at least 10% consider it rare
-                other_id = prior_idx
-            #
-            ## Found the voter matching the most informative interpretation of the queries.
-            ###
-            """
-        if other_id == None:
             ###
             ## Prepare to do phoneme match by narrowing the search to the 
             ## of the union of the following sets of voters with matching phonemes
@@ -1428,20 +1405,27 @@ class Call_Session:
             ## * last of first name
             ## * first of first name
             #
-            try:
+#            try:
+            if True:
+                logging.debug('START try phoneme match')
                 ln = whom_queries[0]['LAST_NAME']
                 lnph = all_possibilities['last'][ln] if ln in all_possibilities['last'] else my_phonemize_cached(ln, 'last')
                 lnph = re.sub(r'[ˈˌː]','',lnph) # ignore diacritics
-                i1 = df_narrowed[df_narrowed['LAST_PHONEMES'].str.endswith  (lnph[-1])].index
-                i2 = df_narrowed[df_narrowed['LAST_PHONEMES'].str.startswith(lnph[ 0])].index
+                name_df = voters.voters_df.loc[df_narrowed.REGN_NUM]
+                lnph_sr = name_df['LAST_PHONEMES'].dropna().str
+                i1 = df_narrowed[lnph_sr.endswith  (lnph[-1])].index
+                i2 = df_narrowed[lnph_sr.startswith(lnph[ 0])].index
                 if 'FIRST_NAME' in whom_queries[0]:
                     fn = whom_queries[0]['FIRST_NAME']
                     fnph = all_possibilities['last'][fn] if fn in all_possibilities['last'] else my_phonemize_cached(fn, 'last')
                     fnph = re.sub(r'[ˈˌː]','',fnph) # ignore diacritics
-                    i3 = df_narrowed[df_narrowed['FIRST_PHONEMES'].str.startswith(fnph[ 0])].index
+                    i3 = df_narrowed[name_df['FIRST_PHONEMES'].str.startswith(fnph[ 0])].index
                     i2 = i2.union(i3)
                 df_narrowed = df_narrowed.loc[i1.union(i2)]
-            except:
+                logging.debug('DONE try phoneme match')
+#            except:
+            else:
+                logging.debug('ABORT try phoneme match') 
                 pass
             #
             ## Narrowed (unless there was an exception.

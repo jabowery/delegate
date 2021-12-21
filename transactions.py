@@ -25,7 +25,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
-audit_log_filepath = os.getenv('AUDIT_LOG') or 'dd_path/audit_log.txt'
+audit_log_filepath = os.getenv('AUDIT_LOG') or f'{dd_path}/audit_log.txt'
 audit_log_filepath = Path(audit_log_filepath)
 if not(audit_log_filepath.exists()):
     audit_log_filepath.parent.mkdir(parents=True,exist_ok=True)

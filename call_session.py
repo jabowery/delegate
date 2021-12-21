@@ -132,7 +132,7 @@ class Call_Session:
 #    res = telnyx.OutboundVoiceProfile.retrieve(os.environ["TELNYX_OUTBOUND_VOICE_PROFILE_ID"])
 
     def __init__(self,event):
-        Call_Session.sovereign_phones = eval(os.getenv('SOVEREIGN_PHONES')) # can change sovereigns on the fly
+        Call_Session.sovereign_phones = eval(os.getenv('SOVEREIGN_PHONES') or '[]') # can change sovereigns on the fly
         if type(event) == str: # if this is a session id
             # initialize only ._id and return the object
             # don't initialize .id as that updates the activity timer
@@ -1050,7 +1050,7 @@ class Call_Session:
             self.whomhelp('your')
             self.make_need_help('whomq',False)
         if self.voter.default_delegate:
-            self.say(f"I {'currently' if self.voter.id < Voter.first_tentative_vid else 'tentatively'} believe you are registered as "+self.voter.name_identification_string()+".")
+            self.say(f"I {'currently' if self.voter.id < voters.first_tentative_vid else 'tentatively'} believe you are registered as "+self.voter.name_identification_string()+".")
         self.say("Which registered voter are you?")
         self.state = 'registerwhom'
     ## "registerwhoconfirmq" 
@@ -1168,6 +1168,7 @@ class Call_Session:
         whom_queries = []
         resides = dict()
         df_narrowed = Voter.indexed_ids()
+        df_narrowed = df_narrowed[df_narrowed.REGN_NUM < voters.first_tentative_vid] # tentatives have no names
         zipsplitlist= re.split(r' (zip|zipcode|zip code)\s+', trs)
         if len(zipsplitlist)>1:
             logging.debug(zipsplitlist[1])
@@ -1405,14 +1406,17 @@ class Call_Session:
             ## * last of first name
             ## * first of first name
             #
-#            try:
-            if True:
+            try:
+#            if True:
                 logging.debug('START try phoneme match')
                 ln = whom_queries[0]['LAST_NAME']
                 lnph = all_possibilities['last'][ln] if ln in all_possibilities['last'] else my_phonemize_cached(ln, 'last')
                 lnph = re.sub(r'[ˈˌː]','',lnph) # ignore diacritics
-                name_df = voters.voters_df.loc[df_narrowed.REGN_NUM]
-                lnph_sr = name_df['LAST_PHONEMES'].dropna().str
+                name_df = voters.voters_df
+                logging.debug(f'len(name_df): {len(name_df)}, len(df_narrowed): {len(df_narrowed)}')
+                import bp
+                bp.bp()
+                lnph_sr = name_df['LAST_PHONEMES'].str
                 i1 = df_narrowed[lnph_sr.endswith  (lnph[-1])].index
                 i2 = df_narrowed[lnph_sr.startswith(lnph[ 0])].index
                 if 'FIRST_NAME' in whom_queries[0]:
@@ -1423,8 +1427,8 @@ class Call_Session:
                     i2 = i2.union(i3)
                 df_narrowed = df_narrowed.loc[i1.union(i2)]
                 logging.debug('DONE try phoneme match')
-#            except:
-            else:
+            except:
+#            else:
                 logging.debug('ABORT try phoneme match') 
                 pass
             #

@@ -1414,8 +1414,6 @@ class Call_Session:
                 lnph = re.sub(r'[ˈˌː]','',lnph) # ignore diacritics
                 name_df = voters.voters_df
                 logging.debug(f'len(name_df): {len(name_df)}, len(df_narrowed): {len(df_narrowed)}')
-                import bp
-                bp.bp()
                 lnph_sr = name_df['LAST_PHONEMES'].str
                 i1 = df_narrowed[lnph_sr.endswith  (lnph[-1])].index
                 i2 = df_narrowed[lnph_sr.startswith(lnph[ 0])].index

@@ -4,3 +4,9 @@
 !properties
 !iowa_voters_scrambled.csv.bz2
 !voters_df.csv
+!city2phonemes.csv
+!county2phonemes.csv
+!first2phonemes.csv
+!last2phonemes.csv
+!middle2phonemes.csv
+

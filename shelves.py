@@ -21,8 +21,12 @@ import logging
 import redisshelve
 from redis import Redis
 import os
+import shelve
+from global_utils import dd_path
 from dotenv import load_dotenv
 load_dotenv(override=True)
+
+nick2REGN_NUMs = shelve.open(str(dd_path/'nicks2REGN_NUMS.shelf'))
 
 REDIS_SOCKET= os.getenv("REDIS_SOCKET")
 def Redis_Connect(db=0):

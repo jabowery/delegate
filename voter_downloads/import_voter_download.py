@@ -27,19 +27,20 @@ import zipfile
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv(override=True)
-
-vd_path = Path('voter_downloads')
-vu_filename = 'all.csv'
-vu_filepath = vd_path/vu_filename # output file.
+from global_utils import vu_filepath, vu_path
+#vu_path = Path('voter_downloads')
+#vu_filename = 'all.csv'
+#vu_filepath = vu_path/vu_filename # output file.
 # Find candidate input file (latest download).
-latest_vd_filepath = Path(sorted(map(lambda x: vd_path/x,filter(lambda xx: xx.find('.zip')>-1,os.listdir(vd_path))), key=os.path.getmtime)[-1])
+latest_vd_filepath = Path(sorted(map(lambda x: vu_path/x,filter(lambda xx: xx.find('.zip')>-1,os.listdir(vu_path))), key=os.path.getmtime)[-1])
 if not(os.path.exists(vu_filepath)) or os.path.getmtime(latest_vd_filepath)>os.path.getmtime(vu_filepath):
-    # A new update has arrived from the Iowa Secretary of state.  The current iowa_3rd_district_voters.csv is out of date.  Process it.
+    # A new update has arrived from the Iowa Secretary of state.  The current iowa_voters.csv is out of date.  Process it.
     outer_zf = zipfile.ZipFile(latest_vd_filepath)
     names = outer_zf.namelist()
     # If this is a zip within a zip, use the inner zip.
     zf = zipfile.ZipFile(outer_zf.open(names[0])) if len(names)==1 and names[0].find('.zip')>-1 else outer_zf
-    csvwriter = csv.writer(io.TextIOWrapper(open(vu_filepath,'wb'), encoding="utf-8")) 
+    vu_file = open(vu_filepath,'wb')
+    csvwriter = csv.writer(io.TextIOWrapper(vu_file, encoding="utf-8"))
     rcnt = 0
     for name in zf.namelist():
 #        allfp.write(zf.open(name).read())
@@ -79,7 +80,7 @@ if not(os.path.exists(vu_filepath)) or os.path.getmtime(latest_vd_filepath)>os.p
     ## This is for diagnostic purposes.
     ##
     for fieldcnt in fieldcntrows.keys():
-        csvfilepath = vd_path/f'fieldcnt{fieldcnt}{name}'
+        csvfilepath = vu_path/f'fieldcnt{fieldcnt}{name}'
         csvfilepath.parent.mkdir(parents=True,exist_ok=True)
         with open(csvfilepath, 'w') as csvfile:
             csvwriter2 = csv.writer(csvfile)
@@ -87,6 +88,24 @@ if not(os.path.exists(vu_filepath)) or os.path.getmtime(latest_vd_filepath)>os.p
                 csvwriter2.writerow(row)
     #
     ## Wrote out separate files for each different field number encounterd.
+    ###
+    ###
+    ## Deal with duplicate REGN_NUM rows coming in from the SoS office.
+    #
+    vu_file.close()
+    voters_df = pd.read_csv(vu_filepath,index_col=['REGN_NUM'],dtype=str,skipinitialspace=True,parse_dates=['LAST_UPDATED_DATE'],infer_datetime_format=True).fillna(value='')
+#    voters_df = pd.read_csv(vu_filepath,index_col=['REGN_NUM'],dtype=str,skipinitialspace=True).fillna(value='')
+    dup_entries = voters_df.index.duplicated(keep=False)
+    dup_df = voters_df.loc[dup_entries]
+    if len(dup_df):
+        # There were duplicates.
+        dup_df.to_csv(vu_path/'duplicate_REGN_NUMs.csv') # Write out a file to notify the SoS of which rows were duplicate REGN_NUMs
+        voters_df = voters_df.sort_values('LAST_UPDATED_DATE')
+        voters_df = voters_df[~voters_df.index.duplicated(keep='last')]
+        voters_df.sort_index()
+        voters_df.to_csv(vu_filepath)
+    #
+    ## Dealt with duplicate REGN_NUM rows coming in from the SoS office.
     ###
     # 
     ## Reformated the output file to make it readable by pandas.read_csv

@@ -63,6 +63,6 @@ for rowi in range(0,len(voters_df)):
         nrow = valscr(nrow, valcol)
     nrow.PHONENO = nrow.PHONENO[:-4]+dig()+dig()+dig()+dig()
     vscr.loc[row.name] = nrow
-v_filepath_scrambled = re.sub(r'\.csv','_scrambled.csv',v_filepath)
+v_filepath_scrambled = re.sub(r'\.csv','_scrambled.csv',str(v_filepath))
 vscr.to_csv(v_filepath_scrambled)
     

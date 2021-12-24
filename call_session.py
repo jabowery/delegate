@@ -28,6 +28,7 @@ import random
 import voters_df
 from voters_df import my_phonemize_cached, my_phonemes_distance_cached, my_phonemize, all_possibilities, my_phonemes_distance, nicknames_of_homonyms
 from shelves import sessions_shelve as shelve
+from shelves import nick2REGN_NUMs
 import os
 import telnyx
 from threading import Thread
@@ -152,6 +153,7 @@ class Call_Session:
         self.call_control_id = self.data.payload.call_control_id
         self.event_type = self.data.event_type
         self.speech_prompt = '' # Assuming successful initiation of some intervoting_action
+        self.kind_of_help_needed = None # intra-transcription processing failure diagnostic to prompt voter for another try
 
     @classmethod
     def delete_headntail_sp(cls,trs):
@@ -691,9 +693,23 @@ class Call_Session:
         self.make_need_help('voting_actionq', True)
         self.voting_actionq()
     def whomhelp(self,theiryour='their'):
-        self.say(f"Just say {theiryour} 10 digit phone number or their name as it appears in {theiryour} voter registration.")
-        self.say(f"If you say {theiryour} name, please also provide any of {theiryour} town, county, zip and/or street name.")
-        self.say("Please speak slowly and distinctly.")
+        if self.kind_of_help_needed:
+            self.say("unable to identify")
+            if self.kind_of_help_needed == 'location':
+                self.kind_of_help_needed = None
+                self.say("I did not understand a location from what I heard, which was:")
+                self.say(self.transcript)
+                self.say(f"Please say {theiryour} name again and include location information such as their city, county, stree name or zipcode")
+            else:
+                self.say("You might need to spell a name.")
+                self.say("For example, instead of saying:")
+                self.say("JOHN, Doe, OF, Warren, County,")
+                self.say("You might spell out the name, Doe," )
+                self.say("JOHN, D. O. E.  , OF, Warren, County,")
+        else:
+            self.say(f"Just say {theiryour} 10 digit phone number or their name as it appears in {theiryour} voter registration.")
+            self.say(f"If you say {theiryour} name, please also provide any of {theiryour} town, county, zip and/or street name.")
+            self.say("Please speak slowly and distinctly.")
 
     def delegateq(self):
         self.state = 'delegateq'
@@ -723,12 +739,9 @@ class Call_Session:
                 logging.debug('unambiguous')
                 self.say_confirm_voting_action_on_person(voting_action,self.whom,voting_action_modifier)
         else:
-            self.say("unable to identify")
-            self.say("You might need to spell a name.")
-            self.say("For example, instead of saying:")
-            self.say("JOHN, Doe, OF, Warren, County,")
-            self.say("You might spell out the name, Doe," )
-            self.say("JOHN, D. O. E.  , OF, Warren, County,")
+            self.need_help['whomq'] = True
+            if not(self.kind_of_help_needed):
+                self.kind_of_help_needed = 'unknown'
             eval(f'self.{voting_action}q()')
 
     def yn_transcript(self):
@@ -1309,6 +1322,9 @@ class Call_Session:
             if resides !={}:
                 fls = fls[:wordnum]
                 trs = ' '.join(fls)
+            elif ({'CITY','COUNTY','STREET','ZIP_CODE'}.intersection(list(resides)))==set():
+                self.say("I did not understand a location from what I heard.")
+                self.kind_of_help_needed = 'location'
         logging.debug('fls: '+str( fls))
         logging.debug('df_narrowed')
         logging.debug(df_narrowed)
@@ -1382,16 +1398,33 @@ class Call_Session:
                 logging.debug(whom_query)
                 whom_queries.append(pd.Series(whom_query))
         logging.debug('DONE preparing homonym queries')
+        if len(whom_queries)*len(df_narrowed)>5e6:
+            self.say(f"I'm looking through {len(df_narrowed)} registered voters for variations on the name {self.transcript}.")
+            self.say("Just a moment...")
+            self.speak()
         self.whom_queries = whom_queries
         other_id=None
         logging.debug('START searching for exact match')
         self.which_whom_query = None
         self.first_whom_query = None
+        partials=dict()
         for whom_query in whom_queries: # exit at the first query result that provides a match
-            df = df_narrowed.query(self.series_to_query(whom_query))
-            if len(df):
+            return_index= set(df_narrowed.REGN_NUM)
+            for field_name in whom_query.keys():
+                fnvalkey = f'{field_name}:{whom_query[field_name]}' 
+                if not(fnvalkey in nick2REGN_NUMs): # If not already cached in the shelve.
+                    logging.debug(f'caching {fnvalkey}')
+                    nick2REGN_NUMs[fnvalkey] = set(df_narrowed.query(self.series_to_query({field_name:whom_query[field_name]})).REGN_NUM)
+                this_index = nick2REGN_NUMs[fnvalkey]
+#                this_index = set(partials[field_name][whom_query[field_name]].REGN_NUM)
+                logging.debug(f'and {fnvalkey}')
+                return_index = this_index.intersection(return_index)
+                if len(return_index)==0:
+                    break
+#            df = df_narrowed.query(self.series_to_query(whom_query))
+            if len(return_index):
 #                other_ids = df.REGN_NUM
-                other_id  = df.iloc[0].REGN_NUM
+                other_id  = list(return_index)[0]
                 self.which_whom_query = whom_query # this is the variant found
                 self.first_whom_query=whom_queries[0] # this is what they expected to find, but it may be some variant
                 break
@@ -1435,16 +1468,16 @@ class Call_Session:
             self.transcript = trs
             logging.debug('df_narrowed just before process_transcript')
             logging.debug(df_narrowed)
-            if len(df_narrowed)>50000:
-                if ({'CITY','COUNTY','STREET','ZIP_CODE'}.intersection(list(resides)))==set():
-#                    self.say(f"As I detected no location information in your description of {self.transcript}")
-                    self.say("I did not understand a location from what I heard, which was:")
-                    self.say(self.transcript)
-                    self.whom = None
-                    return self.whom
-                self.say(f"I'm looking through {len(df_narrowed)} registered voters for {self.transcript}.")
-                self.say("Just a moment...")
-                self.speak()
+#            if len(df_narrowed)>50000:
+#                if ({'CITY','COUNTY','STREET','ZIP_CODE'}.intersection(list(resides)))==set():
+##                    self.say(f"As I detected no location information in your description of {self.transcript}")
+#                    self.say("I did not understand a location from what I heard, which was:")
+#                    self.say(self.transcript)
+#                    self.whom = None
+#                    return self.whom
+#                self.say(f"I'm looking through {len(df_narrowed)} registered voters for {self.transcript}.")
+#                self.say("Just a moment...")
+#                self.speak()
             other_id = self.process_transcript(df_narrowed)
             self.say("I didn't find an exact match with what I heard.")
 

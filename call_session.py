@@ -697,8 +697,8 @@ class Call_Session:
             self.say("unable to identify")
             if self.kind_of_help_needed == 'location':
                 self.kind_of_help_needed = None
-                self.say("I did not understand a location from what I heard, which was:")
-                self.say(self.transcript)
+#                self.say("I did not understand a location from what I heard, which was:")
+#                self.say(self.transcript)
                 self.say(f"Please say {theiryour} name again and include location information such as their city, county, stree name or zipcode")
             else:
                 self.say("You might need to spell a name.")
@@ -1181,7 +1181,8 @@ class Call_Session:
         whom_queries = []
         resides = dict()
         df_narrowed = Voter.indexed_ids()
-        df_narrowed = df_narrowed[df_narrowed.REGN_NUM < voters.first_tentative_vid] # tentatives have no names
+        df_not_narrowed = df_narrowed[df_narrowed.REGN_NUM < voters.first_tentative_vid] # tentatives have no names
+        df_narrowed = df_not_narrowed   #start out not narrowed
         zipsplitlist= re.split(r' (zip|zipcode|zip code)\s+', trs)
         if len(zipsplitlist)>1:
             logging.debug(zipsplitlist[1])
@@ -1325,6 +1326,9 @@ class Call_Session:
             elif ({'CITY','COUNTY','STREET','ZIP_CODE'}.intersection(list(resides)))==set():
                 self.say("I did not understand a location from what I heard.")
                 self.kind_of_help_needed = 'location'
+                self.need_help['whomq'] = True
+                self.whom_query = None
+                return None
         logging.debug('fls: '+str( fls))
         logging.debug('df_narrowed')
         logging.debug(df_narrowed)
@@ -1407,14 +1411,14 @@ class Call_Session:
         logging.debug('START searching for exact match')
         self.which_whom_query = None
         self.first_whom_query = None
-        partials=dict()
         for whom_query in whom_queries: # exit at the first query result that provides a match
             return_index= set(df_narrowed.REGN_NUM)
             for field_name in whom_query.keys():
                 fnvalkey = f'{field_name}:{whom_query[field_name]}' 
                 if not(fnvalkey in nick2REGN_NUMs): # If not already cached in the shelve.
                     logging.debug(f'caching {fnvalkey}')
-                    nick2REGN_NUMs[fnvalkey] = set(df_narrowed.query(self.series_to_query({field_name:whom_query[field_name]})).REGN_NUM)
+                    # Note use of df_not_narrowed rather than df_narrowed.  This is to enable cache for all queries.
+                    nick2REGN_NUMs[fnvalkey] = set(df_not_narrowed.query(self.series_to_query({field_name:whom_query[field_name]})).REGN_NUM)
                 this_index = nick2REGN_NUMs[fnvalkey]
 #                this_index = set(partials[field_name][whom_query[field_name]].REGN_NUM)
                 logging.debug(f'and {fnvalkey}')

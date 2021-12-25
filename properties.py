@@ -69,7 +69,7 @@ class Property:
         shelve[self.id] = pdict
 
     def add(self,addamount):
-        self.amount += addamount
+        self.amount += float(addamount) # float in case addamount is str
 
 #class Wallet:
 

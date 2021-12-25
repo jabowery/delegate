@@ -753,6 +753,13 @@ class Call_Session:
         if yn == 'yes':
             self.voter.delegate(self.whom)
             self.say(f'You have delegated {self.voter.default_delegate.first_middle_last_of_city_string()} to vote on your behalf in your absence on a vote. ')
+            try:
+                logging.debug('about to congratulate')
+                self.say(f'Congratulations!  You have been awarded ${self.voter.awarded} in delegate money for successfully joining the delegate network!')
+                self.say('The next delegate will receive one less delegate dollar, the next one less, and so on.') 
+            except:
+                logging.debug('congratulations failed')
+                pass
             eval('self.'+self.pop_state()) #entire method call string must have been pushed except object context
 #            self.voting_actionq()
         ##### "no" -> delegate(whom)?

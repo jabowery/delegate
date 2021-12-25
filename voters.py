@@ -203,13 +203,22 @@ class Voter:
             if activation_reward > 0:
                 # mint delegate money accordingly.
                 self.mint(activation_reward)
-                logging.info(f'Issuing activation reward: {activation_reward}')
+                self.awarded = activation_reward
+                logging.info(f'Issuing activation reward: {self.awarded}')
         delegdict = self.delegates 
         if delegatevoter:
             delegdict['default'] = delegatevoter
         elif 'default' in delegdict:
             del delegdict['default']
         self.delegates = delegdict
+
+    @property
+    def awarded(self):
+        dsn = self.get('awarded')
+        return dsn if dsn else 0
+    @awarded.setter
+    def awarded(self,dsn):
+        self.set('awarded',dsn)
 
     @property
     def number_of_active_delegates(self):

@@ -59,7 +59,7 @@ class Transaction():
         self.id = str(time.time_ns())
         if 'amount' in xaction:
             amt = round(float(xaction['amount']),2)
-            amt = '${:,.2f}'.format(amt)
+            str_amt = '${:,.2f}'.format(amt)
             xaction['amount'] = amt
         if 'payer' in xaction:
             payer = xaction['payer']
@@ -73,7 +73,7 @@ class Transaction():
             #
             ## critical section end
             ##
-            prepend(payer,'pays',f'${amt} to',payee)
+            prepend(payer,'pays',f'{str_amt} to',payee)
         elif 'bidder' in xaction:
             bidder = xaction['bidder']
             prop = xaction['property']
@@ -85,12 +85,12 @@ class Transaction():
             #
             ## critical section end
             ##
-            prepend(bidder,'bids', f'${amt} for',prop)
+            prepend(bidder,'bids', f'{str_amt} for',prop)
         elif 'awardee' in xaction: # issue newly minted delegate dollars
             awardee = xaction['awardee']
             shelve[self.id] = {'awardee':awardee.id, 'amount':amt}
             awardee.wallet.add(amt)
-            prepend('The Delegate Network for Iowa','awards',f'${amt} of the total $2B delegate money to founding registrant',awardee)
+            prepend('The Delegate Network for Iowa','awards',f'{str_amt} of the total $2B delegate money to founding registrant',awardee)
         elif 'delegatee' in xaction: 
             delegatee = xaction['delegatee']
             delegater = xaction['delegater']

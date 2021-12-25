@@ -1157,10 +1157,12 @@ class Call_Session:
         # also to compensate for end of line in the following regex that does the conversion
         transcript = re.sub(r'\b(\S) (?=\S )',r'\1',transcript)
         transcript = Call_Session.delete_headntail_sp(transcript)
+        self.transcript = transcript
         trs = transcript
         #
         ## Conveted: S p e l l e d - o u t   w o r d s => Spelled-out words
         ###
+        say_justamoment = True # need to say "just a moment" if a long process is involved?
         phone_trs = Call_Session.extract_ten_digit_hyphenated_phone(trs)
         if phone_trs:
             self.say("I heard you say "+phone_trs)
@@ -1404,7 +1406,6 @@ class Call_Session:
         logging.debug('DONE preparing homonym queries')
         if len(whom_queries)*len(df_narrowed)>5e6:
             self.say(f"I'm looking through {len(df_narrowed)} registered voters for variations on the name {self.transcript}.")
-            self.say("Just a moment...")
             self.speak()
         self.whom_queries = whom_queries
         other_id=None
@@ -1417,6 +1418,10 @@ class Call_Session:
                 fnvalkey = f'{field_name}:{whom_query[field_name]}' 
                 if not(fnvalkey in nick2REGN_NUMs): # If not already cached in the shelve.
                     logging.debug(f'caching {fnvalkey}')
+                    if say_justamoment:
+                        self.say("Just a moment.")
+                        self.speak()
+                        say_justamoment = False
                     # Note use of df_not_narrowed rather than df_narrowed.  This is to enable cache for all queries.
                     nick2REGN_NUMs[fnvalkey] = set(df_not_narrowed.query(self.series_to_query({field_name:whom_query[field_name]})).REGN_NUM)
                 this_index = nick2REGN_NUMs[fnvalkey]
@@ -1480,8 +1485,8 @@ class Call_Session:
 #                    self.whom = None
 #                    return self.whom
 #                self.say(f"I'm looking through {len(df_narrowed)} registered voters for {self.transcript}.")
-#                self.say("Just a moment...")
-#                self.speak()
+            self.say("Just a moment...")
+            self.speak()
             other_id = self.process_transcript(df_narrowed)
             self.say("I didn't find an exact match with what I heard.")
 
@@ -1605,9 +1610,9 @@ class Call_Session:
                 if len(flphdists_df):
                     phonemedists_df = phonemedists_df.append(flphdists_df)
                     logging.debug(str(pd.DataFrame(phonemedists_df.sort_values(ascending=True)).join(voters.voters_df[['FIRST_NAME','MIDDLE_NAME','LAST_NAME']])))
-                    if phonemedists_df.mean()-phonemedists_df.min() >2*phonemedists_df.std():
+                    if phonemedists_df.mean()-phonemedists_df.min() >3*phonemedists_df.std():
                         # Return the closest match as soon as a name is 2 standard deviations better than the mean
-                        logging.debug('Returning early with 2 standard deviation winner.')
+                        logging.debug('Returning early with 3 standard deviation winner.')
                         other_id = phonemedists_df.idxmin()
                         return other_id
         if len(phonemedists_df):

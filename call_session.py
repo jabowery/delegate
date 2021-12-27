@@ -95,11 +95,12 @@ def get_current_bills():
     return billdict
 
 class Call_Session:
-    event_types = {
+    event_types = { # each must be accompanied by a method of that name with . changed to _
         'call.transcription',
         'call.answered',
         'call.initiated',
-        'call.recording.saved'
+        'call.recording.saved',
+        'call.speak.ended'
     }
     ###
     ## Action naming conventions for methods are as follows:
@@ -228,6 +229,7 @@ class Call_Session:
 #            logging.debug('speak: '+str(self.speech_prompt))
             self.speak()
 
+        self.call.transcription_stop()
         self.payload = self.data.payload
 #        self.id = self.payload.call_control_id
         try:
@@ -540,24 +542,33 @@ class Call_Session:
 #            logging.debug('hanging up on area code '+str(self.data.payload.from_.area))
 #            self.hangup()
 #            return 
-        self.payload = self.data.payload
-        transcription_url = f'https://api.telnyx.com/v2/calls/{self.call_control_id}/actions/transcription_start'
-        headers2 = {'Content-Type':'application/json','Accept': 'application/json;charset=utf-8','Authorization': f'Bearer {telnyx.api_key}',}
-        data2 = '{"language":"en"}'
-        import requests
-        response2 = requests.post(transcription_url, headers=headers2, data=data2)
-        if response2:
-            logging.debug(response2)
+#        self.payload = self.data.payload
+#        self.call.transcription_start(language='en')
+##        transcription_url = f'https://api.telnyx.com/v2/calls/{self.call_control_id}/actions/transcription_start'
+##        headers2 = {'Content-Type':'application/json','Accept': 'application/json;charset=utf-8','Authorization': f'Bearer {telnyx.api_key}',}
+##        data2 = '{"language":"en"}'
+##        import requests
+##        response2 = requests.post(transcription_url, headers=headers2, data=data2)
+##        if response2:
+##            logging.debug(response2)
         start_recording = self._call.record_start(format="mp3", channels="single")
         logging.debug(start_recording)
         self.say("Welcome to the demo test version of the delegate network for Iowa.  The delegate network is publicly auditable at all times.") # TODO configuration
         self.say("To see the audit log, see http://delegate.network/audit")
         self.say("All actions taken in the demo test will be erased without notice.")
         self.store_actionq()
+
+    def call_speak_ended(self):
+        logging.debug('call_speak_end called')
+        self.payload = self.data.payload
+        self.call.transcription_start(language='en')
+        logging.debug('call_speak_end returning')
+
     def make_need_help(self,qstate,boolval):
             nh = self.need_help
             nh[qstate] = boolval
             self.need_help = nh
+
     def store_actionq(self):
         self.state="store_actionq"
         if not(self.voter.balance):

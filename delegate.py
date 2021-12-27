@@ -79,14 +79,17 @@ from call_session import Call_Session # execute voters_df.py to avoid circular i
     
 @app.route('/Callbacks/Voice/Inbound', methods=['POST'])
 def respond():
+    logging.debug('incoming post')
     event = validate_webhook(request)
     if not event:
         return Response(status=400)
     if os.path.exists('nowdebugging'):
         return Response(status=200)
     sess = Call_Session(event)
+    logging.debug(f'event type: {sess.event_type}')
     if sess.event_type in Call_Session.event_types: # handle only event types recognized by Call_Session
         method = re.sub(r'\.','_',sess.event_type)
+        logging.debug(f'eval(sess.{method}())')
         eval('sess.'+method+'()')
         sess.speak()
     elif sess.state == 'hangup':

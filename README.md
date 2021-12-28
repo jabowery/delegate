@@ -1,4 +1,5 @@
 # The Delegate Network
+![delegatedotnetwork](https://user-images.githubusercontent.com/57646/147612747-acf63e12-b5d7-4601-b5f0-9f13eea279e7.png)
 
 ## Overview
 

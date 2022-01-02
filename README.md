@@ -24,7 +24,7 @@ Another feature is "delegate money":  a [demurrage currency](https://en.wikipedi
 
 ## Installation
 
-(These installation instructions are for a version that does not support SHAKEN/STIR due to the failure of Telnyx to provide FCC-mandated attestation in their API.  The highes current coding priority is converting the API calls to a telecom provider that provides SHAKEN/STIR attestation in their API.)
+(These installation instructions are for a version that does not support SHAKEN/STIR due to the failure of Telnyx to provide FCC-mandated attestation in their API.  The highest current coding priority is converting the API calls to a telecom provider that provides SHAKEN/STIR attestation in their API.)
 
 1. Obtain a [Telnyx phone number](https://portal.telnyx.com/#/app/numbers/my-numbers) with a [call control app id](https://portal.telnyx.com/#/app/call-control/applications).
 2. In this directory create a file named .env for environment variables, with a development environment exemplified in README.resources/home/delegate/.env

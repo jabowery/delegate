@@ -17,6 +17,7 @@
 # along with this program; if not, see: <http://www.gnu.org/licenses/>.
 ##
 ###
+. .env
 export TERM=ascii
 # Run an ngrok flask app version of the delegate network.
 pyflakes *.py
@@ -30,10 +31,19 @@ while : ; do
 	$URL || break
 	sleep 10
 done
+INCOMING_CALL_NGROK_URL="${URL}Callbacks/Voice/Inbound"
+INCOMING_MESS_NGROK_URL="${URL}Callbacks/Messaging/Inbound"
 while true; do
-	./forwardngrokcontrolappurl "${URL}Callbacks/Voice/Inbound"
+	if [ $TELECOMM_PROVIDER == 'telnyx' ] ; then
+		./forwardngrokurl.telnyx $INCOMING_CALL_NGROK_URL
+		./forwardngrokmessagingurl.telnyx $INCOMING_MESS_NGROK_URL
+		FLASK_APP=delegate.py flask run 
+	fi
+	if [ $TELECOMM_PROVIDER == 'twilio' ] ; then
+		./forwardngrokurl.twilio $TWILIO_SID $INCOMING_CALL_NGROK_URL
+		FLASK_APP=delegate_twilio.py flask run 
+	fi
 #	FLASK_APP=delegate.py FLASK_ENV=development flask run
-	FLASK_APP=delegate.py flask run 
 	sleep 3
 	kill $!
 	sleep 5

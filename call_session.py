@@ -100,7 +100,8 @@ class Call_Session:
         'call.answered',
         'call.initiated',
         'call.recording.saved',
-        'call.speak.ended'
+        'call.speak.ended',
+        'call.gather.ended'
     }
     ###
     ## Action naming conventions for methods are as follows:
@@ -123,7 +124,27 @@ class Call_Session:
     ##  6) eval(f'self.{self.state}()')  #Resume execution to take the action on the voice response's transcript.
     ##  7) eval(f'self.{self.pop_state()}') # Pop the stack back to the f'{action}q' state and execute immediately.
     ##
-    ## 
+    ## KLUDGE ADAPTATION TO TELNYX LATENCY PROBLEM WITH START OF TRANSCRIPTION:
+    ## f'{action]qq' and f'{action}confirmqq' are interjected in the state transitions to deal with the following issue:
+    ##
+    ## Telnyx voice transcription-driven IVR has a dilemma due to the latency between call.transcription_start() sending 
+    ## of a POST to https;//api.telnyx.com/v2/calls/.../actions/transcription_start and the actual start of transcription 
+    ## acknowledged by the response_code=200:
+    ## If one waits for a call.speak.end event to start transcription, the user will frequently, if not usually, 
+    ## start speaking before the latency period ends and transcription is actually started.  If the user response is a 
+    ## simple word (such as 'yes' or 'no') there will be no incoming transcription event and the user will be hung in limbo. 
+    ## This "limbo" state is actually not limbo.  The system is actually waiting for the user to speak but the
+    ## user thinks the system has gone dead.
+    ## * If one simply turns on transcription for the entire call, this limbo is avoided, but my experience has been that 
+    ## users will frequently engage in side-talk while the speech synthesis prompt is completing and end up with a nonsense 
+    ## response from the IVR system as a result.
+    ## My solution, in the absence of an appropriate function at the telnyx end, is complex and inadequate:  for every voice 
+    ## prompt, divide it into two parts and add an additional state to the state machine for each part of each prompt.  
+    ## The second state initiates the second part of the voice prompt and does the call.transcription_start(), hoping the 
+    ## latency approximately matches the duration of the second speech prompt such that any side-talk is ignored until 
+    ## precisely the end of the second speech synthesis.
+    ##
+    ## The ...qq methods are the additional states
     ## 
     #
     store_actions = ['money','politics','tell_me_about']#
@@ -155,6 +176,7 @@ class Call_Session:
         self.event_type = self.data.event_type
         self.speech_prompt = '' # Assuming successful initiation of some intervoting_action
         self.kind_of_help_needed = None # intra-transcription processing failure diagnostic to prompt voter for another try
+        self.payload = self.data.payload
 
     @classmethod
     def delete_headntail_sp(cls,trs):
@@ -268,6 +290,11 @@ class Call_Session:
         evalnewstate(self)
 
     def call_transcription(self):
+        try:
+            self.call.transcription_stop()
+        except Exception as e:
+            logging.error('unable to stop transcription because')
+            logging.error(e)
         thread = Thread(target=Call_Session.call_transcription_thread,args=(self,)) # this evaluates to the next state's function (method) but doesn't call it except via Thread's targeting
         thread.start()
         logging.debug("Thread started on "+str('self.'+self.state))
@@ -533,6 +560,15 @@ class Call_Session:
         ## End critical section
         ###
 
+    @property
+    def captcha_digits(self):
+        return self.get('captcha_digits')
+    @captcha_digits.setter
+    def captcha_digits(self,digits):
+#        import bp
+#        bp.bp()
+        self.set('captcha_digits',digits)
+
         ####
         ## State Machine
         #
@@ -551,17 +587,34 @@ class Call_Session:
 ##        response2 = requests.post(transcription_url, headers=headers2, data=data2)
 ##        if response2:
 ##            logging.debug(response2)
-        start_recording = self._call.record_start(format="mp3", channels="single")
-        logging.debug(start_recording)
-        self.say("Welcome to the demo test version of the delegate network for Iowa.  The delegate network is publicly auditable at all times.") # TODO configuration
+#        start_recording = self._call.record_start(format="mp3", channels="single")
+#        logging.debug(start_recording)
+#        self.say("Welcome to the demo test version of the delegate network for Iowa.  The delegate network is publicly auditable at all times.") # TODO configuration
+        import random
+        self.captcha_digits = ['0123456789'[random.randint(0,9)] for x in range(2)]
+        self.call.gather_using_speak(language='en-US',voice="female", payload=f"Welcome to the demo test version of the delegate network for Iowa. To prove you're not a robot, please enter these 2 numbers on your keypad: {' '.join(self.captcha_digits)}", maximum_digits=2, minimum_digits=2)
+
+    def call_gather_ended(self):
+        if self.payload.digits != ''.join(self.captcha_digits):
+            self.say("That didn't match.  Good-bye.")
+            self.speak()
+            self.call.hangup()
+            return
+
+        self.say("Thank you.")
+        self.say("The delegate network is publicly auditable at all times.") # TODO configuration
         self.say("To see the audit log, see http://delegate.network/audit")
         self.say("All actions taken in the demo test will be erased without notice.")
         self.store_actionq()
 
     def call_speak_ended(self):
-        logging.debug('call_speak_end called')
+        logging.debug('call_speak_ended called')
         self.payload = self.data.payload
-        self.call.transcription_start(language='en')
+        if self.state[-2:] == 'qq':
+            self.call.transcription_start(language='en')
+            eval('self.'+self.state+'()')
+        elif self.state[-1]=='q':
+            pass
         logging.debug('call_speak_end returning')
 
     def make_need_help(self,qstate,boolval):
@@ -588,6 +641,9 @@ class Call_Session:
         # store_action? (delegate, vote, recall, audit, register) -> store_action
         else:
             self.say( "If you need help, just say so.")
+        self.state="store_actionqq"
+
+    def store_actionqq(self):
         self.say("Please choose: ")
         self.sayor(Call_Session.store_actions)
         self.state="store_action"
@@ -617,21 +673,6 @@ class Call_Session:
         self.say("both are intended to revitalize the heritage of local autonomy that founded the United States")
         self.say("please visit http://delegate.network")
         eval('self.'+self.pop_state()) #entire method call string must have been pushed except object context
-
-    def giftq(self):
-        # TODO: See "christmas money"
-        self.say("Your gift will be distributed by the sovereigns ")
-        self.say("Please tell us who you are and describe your gift.")
-        self.state='gift'
-
-    def gift(self):
-        # TODO: See "christmas money"
-        self.say("Thank you for making, Operation SANTA, a success with your gift.")
-        self.say("a sovereign will contact you for further information.")
-        prop = self.voter.create_property(self.transcript)
-        prop.session = self
-        eval('self.'+self.pop_state()) #entire method call string must have been pushed except object context
-#        self.store_actionq()
 
     def voting(self):
         # This is called only at the end of call_answered.
@@ -665,7 +706,7 @@ class Call_Session:
             else:
                 self.say(speech_prompt + " there is no one registered to vote with your caller ID phone number.  ")
                 self.say("Your delegations and votes will have effect once the delegate network verifies you are a registered voter.")
-        self.speak()
+#        self.speak()
 
     def voting_actionq(self):
         self.state='voting_actionq'  # Discard any stacked states.  This is the main menu.
@@ -685,6 +726,8 @@ class Call_Session:
         # voting_action? (delegate, vote, audit, register, tell_me_about) -> voting_action
         else:
             self.say( "If you need help, just say so.")
+        self.state='voting_actionqq'
+    def voting_actionqq(self):
         self.say("Would you like to ")
         self.sayor(Call_Session.voting_actions)
         self.state="voting_action"
@@ -730,6 +773,8 @@ class Call_Session:
             self.make_need_help('whomq',False)
         if self.voter.default_delegate:
             self.say("Curently, your delgate is "+self.voter.default_delegate.name_identification_string()+".")
+        self.state='delegateqq'
+    def delegateqq(self):
         self.say("To whom do you wish to delegate your vote when absent?")
         self.state = 'delegate'
 
@@ -777,15 +822,21 @@ class Call_Session:
         elif yn == "no":
             self.delegateq()
         else:
-            self.state='delegateconfirmq' # y/n if only one matched. pick a, b, c, d... if multiple
+            self.state='delegateconfirmqq' # y/n if only one matched. pick a, b, c, d... if multiple
             self.say("I didn't quite catch that.")
-            self.say_confirm_voting_action_on_person('delegate',self.whom)
+    def delegateconfirmqq(self):
+        self.ynq()
+        self.state='delegateconfirm'
+
+#            self.say_confirm_voting_action_on_person('delegate',self.whom)
     def disambiguatewhomq(self):
         self.state = 'disambiguatewhomq'
         self.say(f'There are {len(self.whom)} registered at that number.')
         first_names = [x.FIRST_NAME for x in self.whom]
         logging.debug(first_names)
         self.sayor(first_names)
+        self.state='disabiguatewhomqq'
+    def disambiguatewhomqq(self):
         self.say('Which did you intend?')
         self.state = 'disambiguatewhom'
     def disambiguatewhom(self):
@@ -833,6 +884,8 @@ class Call_Session:
             return
 
     #        self.whomhelp()
+        self.state='payqq'
+    def payqq(self):
         self.say("send how much delegate money to what delegate?")
         self.push_state()
         self.state = 'pay' 
@@ -899,12 +952,17 @@ class Call_Session:
         logging.debug(trs)
         self.transcript = re.sub(r'^\s*to\S*','',trs)
         self.act_whom_match_and_disambiguate('pay',voting_action_modifier=f' ${self.amount} to ')
+        self.state = 'payconfirmqq'
         return
         # the following code was written when "christmas money" was being considered.
         # it permits sending to any phone number regardless of voter registration of that phone number
     def payconfirmq(self):
         self.state='payconfirmq' # y/n if only one matched. pick a, b, c, d... if multiple
         self.say_confirm_voting_action_on_person('pay',self.whom,f' ${self.amount} to')
+        self.state='payconfirmqq'
+    def payconfirmqq(self):
+        self.ynq()
+        self.state='payconfirm'
 
     def payconfirm(self):
         self.state = 'payconfirm'
@@ -917,10 +975,12 @@ class Call_Session:
 #            self.voting_actionq()
         ##### "no" -> pay(whom)?
         elif yn == "no":
-            eval('self.'+self.pop_state()) 
+            self.pop_state()
+            self.state = 'payq'
         else:
             self.say("I didn't quite catch that.")
-            self.payconfirmq() # y/n if only one matched. pick a, b, c, d... if multiple
+            self.pop_state()
+#            self.payconfirmq() # y/n if only one matched. pick a, b, c, d... if multiple
 
     def say_confirm_voting_action_on_person(self,voting_action,voter,voting_action_modifier=''):
         if self.which_whom_query and self.first_whom_query != self.which_whom_query:
@@ -930,8 +990,8 @@ class Call_Session:
         self.say(f'Please confirm, that you want to {voting_action}{voting_action_modifier} {voter.first_middle_last_of_city_string()}. ',end='')
         if self.which_whom_query and 'COUNTY' in self.which_whom_query:
             self.say(f'in {voter.COUNTY} county')
+    def ynq(self):
         self.say('Yes or No?')
-        self.state = f'{voting_action}confirm'
 
     def billhelp(self):
         self.say('To see the bills being considered, visit the documents webpage for the House of Representatives at:')
@@ -962,6 +1022,8 @@ class Call_Session:
 #            self.say('on which bill before the house of representatives do you wish to vote?')
             self.billhelp()
             self.make_need_help('voteq',False)
+        self.state='voteqq'
+    def voteqq(self):
         self.say("vote on what bill?")
         self.state = 'vote'
     def vote(self):
@@ -999,6 +1061,8 @@ class Call_Session:
         self.state = 'votebillq'
         ##### votebill?(yay, nay, abstain, absent)
         self.say("how do you want to vote on "+self.bill+', titled, '+self.billdict[self.bill]+"?")
+        self.state = 'votebillqq'
+    def votebillqq(self):
         self.say("yes, no, abstain, or, absent?")
         self.state = 'votebill'
     def votebill(self):
@@ -1028,12 +1092,16 @@ class Call_Session:
         self.state = 'recallconfirmq'
         if self.voter.default_delegate:
             self.say_confirm_voting_action_on_person("recall",self.voter.default_delegate)
+            self.state='recallconfirmqq'
 #            self.say("Do you want to recall "+self.voter.default_delegate.name_identification_string()+"?")
 #            self.say("Please say, yes or no.")
         else:
             self.say("you have not delegated anyone to vote in your absence")
             eval('self.'+self.pop_state()) #entire method call string must have been pushed except object context
             #self.voting_actionq()
+    def recallconfirmqq(self):
+        self.ynq()
+        self.state='recallconfirm'
 
     def recallconfirm(self):
         self.state = 'recallconfirm'
@@ -1053,6 +1121,9 @@ class Call_Session:
 
     def registerq(self):
         self.state = 'registerq'
+        self.say('You can update your voter registration with your county auditor.')
+        self.state = 'registerqq'
+    def registerqq(self):
         self.say('In what county do you live?')
         self.state = 'registercounty'
 
@@ -1072,7 +1143,7 @@ class Call_Session:
             #self.voting_actionq()
         else:
             self.say('I didnt quite catch that.')
-            self.registerq()
+            self.registerqq()
             
     def registerwhoq(self):
         self.state = 'registerwhomq'
@@ -1082,6 +1153,8 @@ class Call_Session:
             self.make_need_help('whomq',False)
         if self.voter.default_delegate:
             self.say(f"I {'currently' if self.voter.id < voters.first_tentative_vid else 'tentatively'} believe you are registered as "+self.voter.name_identification_string()+".")
+        self.state = 'registerwhomqq'
+    def registerwhomqq(self):
         self.say("Which registered voter are you?")
         self.state = 'registerwhom'
     ## "registerwhoconfirmq" 
@@ -1089,12 +1162,16 @@ class Call_Session:
         self.state = 'registerwhomconfirmq'
         if self.voter.default_delegate:
             self.say_confirm_voting_action_on_person("registerwhom",self.voter.default_delegate)
+            self.state='registerwhomconfirmqq'
 #            self.say("Do you want to be registered to vote as "+self.voter.default_delegate.name_identification_string()+"?")
 #            self.say("Please say, yes or no.")
         else:
             self.say("you have not delegated anyone to vote in your absence")
             eval('self.'+self.pop_state()) #entire method call string must have been pushed except object context
             #self.voting_actionq()
+    def registerwhomconfirmqq(self):
+        self.ynq()
+        self.state='registerwhomconfirm'
 
     def registerwhomconfirm(self):
         self.state = 'registerwhomconfirm'
@@ -1123,6 +1200,8 @@ class Call_Session:
         self.say("you can say")
         self.say('me')
         self.say("to see how your voting power is being used.")
+        self.state = 'auditqq'
+    def auditqq(self):
         self.say('which delegate would you like to audit?')
         self.state = 'auditwhom'
 
@@ -1137,16 +1216,20 @@ class Call_Session:
                 #self.voting_actionq()
             else:
                 self.say("I didn't quite catch that.")
-                self.auditq()
+                self.auditqq()
         else:
             if self.person_match_transcript(): # saves matched person(s) in self.whom
             #### confirm?
                 self.auditconfirmq()
             else:
                 self.say("unable to identify")
-                self.auditq()
+                self.auditqq()
     def auditconfirmq(self):
         self.say_confirm_voting_action_on_person('audit',self.whom)
+        self.state='auditconfirmqq'
+    def auditconfirmqq(self):
+        self.ynq()
+        self.state='auditconfirm'
 
     def auditconfirm(self):
         self.state='auditconfirm' # y/n if only one matched. pick a, b, c, d... if multiple

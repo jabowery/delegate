@@ -23,6 +23,8 @@ load_dotenv(override=True)
 
 import os
 
+TELECOM_PROVIDER = os.getenv('TELECOM_PROVIDER')
+
 LOG_LEVEL = os.getenv('LOG_LEVEL')
 log_level = eval('logging.'+LOG_LEVEL) if LOG_LEVEL else logging.WARNING
 logging.basicConfig(filename='dynamic_data/system.log', level=log_level)
@@ -32,6 +34,7 @@ from application_factory.extensions import scheduler
 from application_factory import app
 
 import telnyx
+
 from flask import request, Response
 import re
 
@@ -46,15 +49,19 @@ def validate_webhook(req):
                                                signature,
                                                timestamp,
                                                100000000)
+#        import pprint
+#        pp = pprint.PrettyPrinter(indent=4)
+#        pp.pprint(event.__dict__)
+
     except ValueError:
-        logging.debug("Error while decoding event!")
+        logging.error("Error while decoding event!")
         return False
     except telnyx.error.SignatureVerificationError:
-        logging.debug("Invalid signature!")
+        logging.error("Invalid signature!")
         return False
     except Exception as e:
-        logging.debug("Unknown Error")
-        logging.debug(e)
+        logging.error("Unknown Error")
+        logging.error(e)
         return False
 
 #    logging.debug("Received event: id={id}+str( data={data}".format()
@@ -77,9 +84,13 @@ from shelves import purge, sessions_shelve
 purge('sessions')
 from call_session import Call_Session # execute voters_df.py to avoid circular import from voters
     
-@app.route('/Callbacks/Voice/Inbound', methods=['POST'])
+@app.route('/Callbacks/Voice/Inbound', methods=['POST','GET'])
 def respond():
-    logging.debug('incoming post')
+#    import pprint
+#    pp = pprint.PrettyPrinter(indent=4)
+#    pp.pprint(request.__dict__)
+#    logging.debug('incoming post')
+    print('TELNYX')
     event = validate_webhook(request)
     if not event:
         return Response(status=400)
@@ -95,6 +106,54 @@ def respond():
     elif sess.state == 'hangup':
         sess.hangup()
     return Response(status=200)
+
+import json
+from urllib.parse import urlunsplit
+@app.route('/Callbacks/Messaging/Inbound', methods=['POST','GET'])
+def inbound_message():
+    import pprint
+    pp = pprint(indent=4)
+    pp.pprint(request.__dict__)
+    valid_webhook = validate_webhook(request)
+    if not valid_webhook:
+        return "Webhook not verified", 400
+    body = json.loads(request.data)
+    message_id = body["data"]["payload"]["id"]
+    print(f"Received inbound message with ID: {message_id}")
+    to_number = body["data"]["payload"]["to"][0]["phone_number"]
+    from_number = body["data"]["payload"]["from"]["phone_number"]
+    webhook_url = urlunsplit((
+        request.scheme,
+        request.host,
+        "/messaging/outbound",
+        "", ""))
+    telnyx_request = {
+        "from_": to_number,
+        "to": from_number,
+        "webhook_url": webhook_url,
+        "use_profile_webhooks": False,
+        "text": "Hello from Telnyx!"
+    }
+    text = body["data"]["payload"]["text"].strip().lower()
+    if text == "dog":
+        telnyx_request["media_urls"] = ["https://telnyx-mms-demo.s3.us-east-2.amazonaws.com/small_dog.JPG"]
+        telnyx_request["text"] = "Here is a doggo!"
+    try:
+        telnyx_response = telnyx.Message.create(**telnyx_request)
+        print(f"Sent message with id: {telnyx_response.id}")
+    except Exception as e:
+        print("Error sending message")
+        print(e)
+    return Response(status=200)
+
+
+@app.route('/Callbacks/Messaging/Outbound', methods=['POST','GET'])
+def outbound_message():
+    body = json.loads(request.data)
+    message_id = body["data"]["payload"]["id"]
+    print(f"Received outbound DLR with ID: {message_id}")
+    return Response(status=200)
+
 
 
 #from application_factory import app

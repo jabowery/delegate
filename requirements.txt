@@ -2,6 +2,7 @@ python-dotenv
 pandas
 ipython
 telnyx
+twilio
 certifi
 pyopenssl
 flask

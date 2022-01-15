@@ -36,7 +36,7 @@ INCOMING_MESS_NGROK_URL="${URL}Callbacks/Messaging/Inbound"
 while true; do
 	if [ $TELECOMM_PROVIDER == 'telnyx' ] ; then
 		./forwardngrokurl.telnyx $INCOMING_CALL_NGROK_URL
-		./forwardngrokmessagingurl.telnyx $INCOMING_MESS_NGROK_URL
+#		./forwardngrokmessagingurl.telnyx $INCOMING_MESS_NGROK_URL
 		FLASK_APP=delegate.py flask run 
 	fi
 	if [ $TELECOMM_PROVIDER == 'twilio' ] ; then

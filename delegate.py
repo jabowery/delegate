@@ -32,6 +32,9 @@ logging.basicConfig(filename='dynamic_data/system.log', level=log_level)
 from application_factory.extensions import scheduler
 #from application_factory.tasks import task2
 from application_factory import app
+#if LOG_LEVEL=='DEBUG':
+#    import flask_monitoringdashboard as dashboard
+#    dashboard.bind(app)
 
 import telnyx
 
@@ -86,6 +89,7 @@ from call_session import Call_Session # execute voters_df.py to avoid circular i
     
 @app.route('/Callbacks/Voice/Inbound', methods=['POST','GET'])
 def respond():
+    logging.debug('RESPONDPID: '+str(os.getpid()))
 #    import pprint
 #    pp = pprint.PrettyPrinter(indent=4)
 #    pp.pprint(request.__dict__)

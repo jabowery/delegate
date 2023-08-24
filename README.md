@@ -24,7 +24,7 @@ Another feature is "delegate money":  a [demurrage currency](https://en.wikipedi
 
 ## Installation
 
-(These installation instructions are for a version that does not support SHAKEN/STIR due to the failure of Telnyx to provide FCC-mandated attestation in their API.  The highest current coding priority is hardening the system against attacked by denial of service calls.)
+(These installation instructions are for a version that does not support SHAKEN/STIR.  Telnyx now supports SHAKEN/STIR attesation on incoming voice calls (but not text messages).  Therefore the highest current coding priority is accepting only calls with SHAKEN/STIR attestation so as to harden the system against by denial of service attack calls.)
 
 1. Obtain a [Telnyx phone number](https://portal.telnyx.com/#/app/numbers/my-numbers) with a [call control app id](https://portal.telnyx.com/#/app/call-control/applications).
 2. In this directory create a file named .env for environment variables, with a development environment exemplified in README.resources/home/delegate/.env
@@ -162,14 +162,12 @@ Another feature is "delegate money":  a [demurrage currency](https://en.wikipedi
 	1. Public download an audit snapshot of the current database.
 	1. Current delegate network tally of votes on those bills.
 		1. Lower priority: Queries to identify top influencers on specific bills.
-1. Call-back authentication in lieu of SHAKEN/STIR APIs.
+1. Authentication using SHAKEN/STIR attestation.
 1. Re-factor to abstract jurisdiction-specific parameters and put them in the .env configuration.
 	1. This may involve creating a modularized extension API inheriting from an Abstract Base Class.
 1. Regression testing framework.
 	1. A set of MP3s to stimulate the transcription service, with expected results based on the anonymized voters sample data provided with the repository.
 1. Document lobotomized redis with invocation: runuser -g redis -u redis redis-server redis-delegate-public.conf
-1. Authentication using SHAKEN/STIR attestation.
-	1. This may entail getting off the Telynx platform, which would raise the priority of abstracting out the telecom service provider API.
 1. Better-abstraction of the telecom service provider API.
 	1. Again, a modularized extension API inheriting from ABC is probably necessary.
 1. Replace all those print statements with a logger and read any non-default level from .env.
